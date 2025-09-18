@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from analytics.views import register_user, create_site
+from analytics.views import register_user, create_site, track_event, page_views, sessions_metrics, new_vs_returning, sources, devices, browsers, geography
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,5 +25,12 @@ urlpatterns = [
     path("api/login/", TokenObtainPairView.as_view(), name="login"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/create-site/", create_site, name="create-site"),
-
+    path("track/", track_event, name="track-event"),
+    path("analytics/pages/<str:site_id>/", page_views, name="page-views"),
+    path("analytics/sessions/<str:site_id>/", sessions_metrics, name="sessions"),
+    path("analytics/new-vs-returning/<str:site_id>/", new_vs_returning, name="new-returning"),
+    path("analytics/sources/<str:site_id>/",  sources, name="sources"),
+    path("analytics/devices/<str:site_id>/", devices, name="devices"),
+    path("analytics/browsers/<str:site_id>/", browsers, name="browsers"),
+    path("analytics/geography/<str:site_id>/", geography, name="geography"),
 ]
