@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -40,11 +41,12 @@ INSTALLED_APPS = [
     'rest_framework',
     "rest_framework.authtoken",
     "analytics",
+    "corsheaders",
 ]
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
-    ]
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    )
 }
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -54,6 +56,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'web_analytics_backend.urls'
@@ -72,7 +75,7 @@ TEMPLATES = [
         },
     },
 ]
-
+CORS_ALLOW_ALL_ORIGINS = True
 WSGI_APPLICATION = 'web_analytics_backend.wsgi.application'
 
 
@@ -82,11 +85,11 @@ WSGI_APPLICATION = 'web_analytics_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT'),
+        'NAME': os.getenv('DB_NAME',"postgres"),
+        'USER': os.getenv('DB_USER',"postgres"),
+        'PASSWORD': os.getenv('DB_PASSWORD',"postgres"),
+        'HOST': os.getenv('DB_HOST',"localhost"),
+        'PORT': os.getenv('DB_PORT',"5432"),
     }
 }
 
