@@ -30,20 +30,8 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
    
       localStorage.setItem("token", data.access);
   
-      const siteRes = await axios.post(
-        "http://localhost:8000/api/create-site/",
-        { domain: "example.com" }, 
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${data.access}`,
-          },
-        }
-      );
-  
-      const siteData = siteRes.data;
-      setSiteId(siteData.site_id); 
-      router.push(`/site-info?siteId=${siteData.site_id}`); 
+      router.push("/sites");
+
     } catch (error) {
       console.error("An error occurred during the request:", error);
     }
