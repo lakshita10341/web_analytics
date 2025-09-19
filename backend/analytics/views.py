@@ -8,6 +8,7 @@ from datetime import timedelta
 from .models import Event, Site
 from .serializers import EventSerializer, SiteSerializer
 import dateutil.parser
+from django.contrib.auth.models import User
 
 
 @api_view(["POST"])
@@ -57,6 +58,11 @@ def create_site(request):
     site = Site.objects.create(owner=request.user, domain=domain, site_id=site_id)
     return Response({"site_id": site.site_id, "domain": site.domain})
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def list_sites(request):
+    sites = Site.objects.filter(owner=request.user)
+    return Response(SiteSerializer(sites, many=True).data)
 
 def ensure_site_belongs_to_user(user, site_id):
     site = Site.objects.filter(site_id=site_id, owner=user).first()
@@ -163,18 +169,37 @@ def new_vs_returning(request, site_id):
         else:
             returning += 1
 
-    # simple trend over days
+    # daily trend for both new and returning sessions
     from django.db.models.functions import TruncDate
+    from django.db.models import OuterRef, Subquery, Q
+
+    # Subquery to fetch first timestamp per session
+    first_ts_sub = (
+        Event.objects.filter(site=site, session_id=OuterRef("session_id"))
+        .values("session_id")
+        .annotate(first_ts=Min("timestamp"))
+        .values("first_ts")[:1]
+    )
+
     daily = (
         Event.objects.filter(site=site, timestamp__gte=since)
-        .values("session_id")
-        .annotate(first=Min("timestamp"))
-        .annotate(day=TruncDate("first"))
+        .annotate(day=TruncDate("timestamp"))
+        .annotate(first_ts=Subquery(first_ts_sub))
         .values("day")
-        .annotate(new_sessions=Count("session_id"))
+        .annotate(
+            new_sessions=Count("session_id", filter=Q(first_ts__gte=since), distinct=True),
+            returning_sessions=Count("session_id", filter=Q(first_ts__lt=since), distinct=True),
+        )
         .order_by("day")
     )
-    daily_trend = [{"date": r["day"], "new_sessions": r["new_sessions"]} for r in daily]
+    daily_trend = [
+        {
+            "date": r["day"],
+            "new_sessions": r["new_sessions"],
+            "returning_sessions": r["returning_sessions"],
+        }
+        for r in daily
+    ]
 
     return Response({"new": new, "returning": returning, "daily": daily_trend})
 

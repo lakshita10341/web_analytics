@@ -1,0 +1,156 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { API_BASE } from "@/lib/api";
+import gsap from "gsap";
+
+type Props = { mode: "login" | "signup" };
+
+export default function AuthForm({ mode }: Props) {
+  const router = useRouter();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.from(".auth-card", { y: 30, opacity: 0, duration: 0.6, ease: "power2.out" });
+      gsap.from(".bg-bubble", {
+        opacity: 0,
+        y: 20,
+        stagger: 0.08,
+        duration: 0.9,
+        ease: "power3.out",
+      });
+    }, containerRef);
+    return () => ctx.revert();
+  }, []);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      if (mode === "signup") {
+        const res = await fetch(`${API_BASE}/signup/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+        if (!res.ok) throw new Error(await res.text());
+        // after signup, auto-login
+      }
+
+      // login
+      const loginRes = await fetch(`${API_BASE}/login/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      if (!loginRes.ok) throw new Error(await loginRes.text());
+      const data = await loginRes.json();
+      const access = data.access || data.token || data.access_token;
+      if (!access) throw new Error("No access token returned");
+      // persist token for API calls and route guards
+      localStorage.setItem("token", access);
+      // also set a cookie so SSR/middleware could read if needed
+      document.cookie = `token=${access}; path=/; max-age=${60 * 60 * 24 * 7}`;
+
+      // small success animation then redirect
+      gsap.to(".auth-card", { scale: 1.02, duration: 0.15, yoyo: true, repeat: 1, ease: "power1.inOut" });
+      setTimeout(() => router.push("/sites"), 350);
+    } catch (err: any) {
+      setError(err?.message || "Something went wrong");
+      gsap.fromTo(
+        ".auth-card",
+        { x: -6 },
+        { x: 0, duration: 0.4, ease: "elastic.out(1, 0.4)", clearProps: "x" }
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div ref={containerRef} className="relative flex min-h-[100svh] items-center justify-center overflow-hidden">
+      {/* animated background bubbles */}
+      {[...Array(8)].map((_, i) => (
+        <div
+          key={i}
+          className="bg-bubble pointer-events-none absolute -z-10 rounded-full blur-2xl opacity-30"
+          style={{
+            width: 120 + (i % 3) * 40,
+            height: 120 + (i % 3) * 40,
+            left: `${(i * 12) % 100}%`,
+            top: `${(i * 17) % 100}%`,
+            background:
+              i % 2 === 0
+                ? "linear-gradient(135deg, rgba(79,70,229,0.5), rgba(16,185,129,0.4))"
+                : "linear-gradient(135deg, rgba(236,72,153,0.5), rgba(99,102,241,0.4))",
+          }}
+        />
+      ))}
+
+      <div className="auth-card w-full max-w-md rounded-2xl border bg-white/70 p-8 shadow-xl backdrop-blur dark:bg-black/40 dark:border-white/10">
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-bold">
+            {mode === "login" ? "Welcome back" : "Create your account"}
+          </h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {mode === "login" ? "Sign in to continue" : "It only takes a minute"}
+          </p>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium">Username</label>
+            <Input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter username"
+              required
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Password</label>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter password"
+              required
+            />
+          </div>
+
+          {error && (
+            <div className="rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700 dark:border-red-400/30 dark:bg-red-900/30 dark:text-red-200">
+              {error}
+            </div>
+          )}
+
+          <Button disabled={loading} className="w-full" type="submit">
+            {loading ? (mode === "login" ? "Signing in..." : "Creating account...") : mode === "login" ? "Sign In" : "Sign Up"}
+          </Button>
+
+          <div className="pt-2 text-center text-sm text-gray-500 dark:text-gray-400">
+            {mode === "login" ? (
+              <span>
+                Don&apos;t have an account? <a href="/signup" className="text-primary underline-offset-4 hover:underline">Sign up</a>
+              </span>
+            ) : (
+              <span>
+                Already have an account? <a href="/login" className="text-primary underline-offset-4 hover:underline">Log in</a>
+              </span>
+            )}
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
