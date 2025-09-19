@@ -1,7 +1,7 @@
 "use client";
 
 import { notFound } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import KPICard from "@/components/KPICard";
 import ChartContainer from "@/components/chartcontainer";
 import { fetchJSON } from "@/lib/api";
@@ -24,6 +24,7 @@ export default function DashboardPage({ params }: DashboardPageProps) {
   const [devicesData, setDevicesData] = useState<any[]>([]);
   const [browsersData, setBrowsersData] = useState<any[]>([]);
   const [geoData, setGeoData] = useState<any[]>([]);
+  const [newVsReturning, setNewVsReturning] = useState<{new: number, returning: number, daily: Array<{date: string, new_sessions: number, returning_sessions: number}>}>({new: 0, returning: 0, daily: []});
 
   useEffect(() => {
     const load = async () => {
@@ -96,9 +97,40 @@ export default function DashboardPage({ params }: DashboardPageProps) {
           { country: "United Kingdom", count: 200 },
         ]);
       }
+
+      try {
+        const nvr = await fetchJSON(`/analytics/new-vs-returning/${site_id}/`);
+        setNewVsReturning(nvr);
+      } catch (e) {
+        console.error("Failed to load new vs returning data:", e);
+        // Fallback dummy data
+        setNewVsReturning({
+          new: 350,
+          returning: 80,
+          daily: Array.from({ length: 14 }).map((_, i) => ({
+            date: `2025-09-${i + 1}`,
+            new_sessions: Math.round(Math.random() * 30 + 5),
+            returning_sessions: Math.round(Math.random() * 20 + 3),
+          }))
+        });
+      }
     };
     load();
   }, [site_id]);
+
+  // Merge page views and sessions trends by date so we can show both series in one chart
+  const mergedTrend = useMemo(() => {
+    const byDate: Record<string, { date: string; views?: number; sessions?: number }> = {};
+    (pageViewsData?.trend || []).forEach((d: any) => {
+      const key = String(d.date);
+      byDate[key] = { ...(byDate[key] || { date: key }), views: d.views };
+    });
+    (sessionsData?.trend || []).forEach((d: any) => {
+      const key = String(d.date);
+      byDate[key] = { ...(byDate[key] || { date: key }), sessions: d.sessions };
+    });
+    return Object.values(byDate).sort((a, b) => (a.date > b.date ? 1 : -1));
+  }, [pageViewsData, sessionsData]);
 
   return (
     <div className="p-8 space-y-6">
@@ -110,7 +142,7 @@ export default function DashboardPage({ params }: DashboardPageProps) {
       <div className="grid grid-cols-4 gap-4">
         <KPICard title="Page Views (30d)" value={pageViewsData?.trend?.reduce?.((a: any,b: { views: any; })=> a+(b.views||0),0) || "—"} subtitle="Total views in selected range" />
         <KPICard title="Sessions" value={sessionsData?.session_count ?? "—"} subtitle={`Avg session: ${Math.round(sessionsData?.avg_duration_seconds || 0)}s`} />
-        <KPICard title="New Users" value={"—"} subtitle="(computed on backend)" />
+        <KPICard title="New Users" value={newVsReturning?.new?.toLocaleString() || "—"} subtitle={`${newVsReturning?.returning?.toLocaleString() || 0} returning`} />
         <KPICard title="Top Country" value={geoData?.[0]?.country || "—"} subtitle={`${geoData?.[0]?.count || 0} visitors`} />
       </div>
 
@@ -118,7 +150,25 @@ export default function DashboardPage({ params }: DashboardPageProps) {
         <ChartContainer title="Page Views Trend" data={pageViewsData?.trend || []} chartKind="time-series" xKey="date" yKey="views" />
         <ChartContainer title="Sessions (trend)" data={sessionsData?.trend || []} chartKind="time-series" xKey="date" yKey="sessions" />
         <ChartContainer title="Top Pages" data={(pageViewsData?.top_pages || []).map((p:any)=>({ name: p.url, value: p.views }))} chartKind="categorical" xKey="name" yKey="value" />
-        <ChartContainer title="New vs Returning (daily new)" data={[]} chartKind="time-series" xKey="date" yKey="new_sessions" />
+        <ChartContainer 
+          title="New vs Returning (daily)" 
+          data={newVsReturning?.daily || []} 
+          chartKind="time-series" 
+          xKey="date" 
+          yKeys={["new_sessions", "returning_sessions"]}
+          subtitle={`${newVsReturning?.new?.toLocaleString() || 0} new, ${newVsReturning?.returning?.toLocaleString() || 0} returning`}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6">
+        <ChartContainer
+          title="Views vs Sessions"
+          data={mergedTrend}
+          chartKind="time-series"
+          xKey="date"
+          yKeys={["views", "sessions"]}
+          subtitle="Comparison of daily page views vs session count"
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-6">

@@ -1,15 +1,19 @@
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Line, LineChart, AreaChart, Area } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Line, LineChart, AreaChart, Area, Legend } from "recharts";
 
 type Props = {
   data: any[];
   xKey: string;
-  yKey: string;
+  yKey?: string; // kept for backward compatibility
+  yKeys?: string[]; // multiple series
   type: "bar" | "line" | "area";
   height?: number;
+  colors?: string[]; // optional colors per series
 };
 
-export default function BarOrLine({ data, xKey, yKey, type, height = 320 }: Props) {
+export default function BarOrLine({ data, xKey, yKey, yKeys, type, height = 320, colors = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#6366F1"] }: Props) {
   if (!data || data.length === 0) return <div className="p-6 text-center text-gray-400">No data</div>;
+
+  const series = (yKeys && yKeys.length > 0) ? yKeys : (yKey ? [yKey] : []);
 
   let chartElement: React.ReactElement | null = null;
   if (type === "bar") {
@@ -18,7 +22,10 @@ export default function BarOrLine({ data, xKey, yKey, type, height = 320 }: Prop
         <XAxis dataKey={xKey} />
         <YAxis />
         <Tooltip />
-        <Bar dataKey={yKey} />
+        <Legend />
+        {series.map((k, i) => (
+          <Bar key={k} dataKey={k} fill={colors[i % colors.length]} />
+        ))}
       </BarChart>
     );
   } else if (type === "line") {
@@ -27,7 +34,10 @@ export default function BarOrLine({ data, xKey, yKey, type, height = 320 }: Prop
         <XAxis dataKey={xKey} />
         <YAxis />
         <Tooltip />
-        <Line type="monotone" dataKey={yKey} stroke="#4F46E5" />
+        <Legend />
+        {series.map((k, i) => (
+          <Line key={k} type="monotone" dataKey={k} stroke={colors[i % colors.length]} dot={false} />
+        ))}
       </LineChart>
     );
   } else if (type === "area") {
@@ -36,7 +46,10 @@ export default function BarOrLine({ data, xKey, yKey, type, height = 320 }: Prop
         <XAxis dataKey={xKey} />
         <YAxis />
         <Tooltip />
-        <Area type="monotone" dataKey={yKey} fill="#C7B2FF" stroke="#7C3AED" />
+        <Legend />
+        {series.map((k, i) => (
+          <Area key={k} type="monotone" dataKey={k} fill={colors[i % colors.length]} stroke={colors[i % colors.length]} />
+        ))}
       </AreaChart>
     );
   }
