@@ -2,7 +2,9 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recha
 
 const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#06B6D4", "#8B5CF6"];
 
-export default function PieChartComp({ data, nameKey = "name", valueKey = "value" }: { data: any[]; nameKey?: string; valueKey?: string }) {
+type PieDatum = { name: string; value: number };
+
+export default function PieChartComp({ data, nameKey = "name", valueKey = "value" }: { data: PieDatum[]; nameKey?: string; valueKey?: string }) {
   if (!data || data.length === 0) return <div className="p-6 text-center text-gray-400">No data</div>;
   return (
     <div style={{ width: "100%", height: 320 }}>

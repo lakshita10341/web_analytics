@@ -115,8 +115,15 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
       );
 
       router.push("/sites");
-    } catch (error: any) {
-      setError(error?.response?.data?.error || "Authentication failed");
+    } catch (error: unknown) {
+      let message = "Authentication failed";
+      if (axios.isAxiosError(error)) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        message = (error.response?.data as any)?.error || error.message || message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
+      setError(message);
       // subtle shake on error
       gsap.fromTo(
         cardRef.current,

@@ -5,10 +5,13 @@ import { motion } from "framer-motion";
 import BarOrLine from "./charts/BarOrLine";
 import PieChartComp from "./charts/pieChartComp";
 
+type DataValue = string | number | undefined;
+export type DataPoint = Record<string, DataValue> & { date?: string; name?: string; value?: number; count?: number; views?: number };
+
 type Props = {
   title: string;
-  fetcher?: any; 
-  data?: any[];
+  fetcher?: () => Promise<DataPoint[]>; 
+  data?: DataPoint[];
   chartKind?: "time-series" | "categorical" | "pie";
   xKey?: string;
   yKey?: string; // single series for backward compatibility
@@ -43,16 +46,16 @@ export default function ChartContainer({ title, data = [], chartKind = "time-ser
           {subtitle ? <div className="text-xs text-gray-500 mt-1 dark:text-gray-400">{subtitle}</div> : null}
         </div>
         <div>
-          <select className="border rounded px-2 py-1 dark:bg-transparent dark:border-white/20" value={type} onChange={(e) => setType(e.target.value as any)}>
+          <select className="border rounded px-2 py-1 dark:bg-transparent dark:border-white/20" value={type} onChange={(e) => setType(e.target.value as "bar" | "line" | "area" | "pie")}>
             {typeOptions.map(t => <option key={t} value={t}>{t.toUpperCase()}</option>)}
           </select>
         </div>
       </div>
 
       {type === "pie" || chartKind === "pie" ? (
-        <PieChartComp data={data.map(d => ({ name: d.name || d.source || d.country || d.url, value: d.count || d.views || d.value }))} />
+        <PieChartComp data={data.map(d => ({ name: (d as any).name || (d as any).source || (d as any).country || (d as any).url, value: (d as any).count || (d as any).views || (d as any).value }))} />
       ) : (
-        <BarOrLine data={data.map(d => ({ ...d, date: (d.date || d.day || d.label) }))} xKey={xKey} yKey={yKey as any} yKeys={yKeys} type={type as any} colors={colors} />
+        <BarOrLine data={data.map(d => ({ ...d, date: ((d as any).date || (d as any).day || (d as any).label) }))} xKey={xKey} yKey={yKey} yKeys={yKeys} type={type === "pie" ? "bar" : type} colors={colors} />
       )}
     </motion.div>
   );

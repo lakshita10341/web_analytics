@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { API_BASE } from "@/lib/api";
 import gsap from "gsap";
+import { Eye, EyeOff } from "lucide-react";
 
 type Props = { mode: "login" | "signup" };
 
@@ -16,6 +17,7 @@ export default function AuthForm({ mode }: Props) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -65,8 +67,9 @@ export default function AuthForm({ mode }: Props) {
       // small success animation then redirect
       gsap.to(".auth-card", { scale: 1.02, duration: 0.15, yoyo: true, repeat: 1, ease: "power1.inOut" });
       setTimeout(() => router.push("/sites"), 350);
-    } catch (err: any) {
-      setError(err?.message || "Something went wrong");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
       gsap.fromTo(
         ".auth-card",
         { x: -6 },
@@ -117,15 +120,29 @@ export default function AuthForm({ mode }: Props) {
               required
             />
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Password</label>
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
-              required
-            />
+          <div className="group">
+            <label className="mb-1 block text-sm font-medium text-gray-800 dark:text-gray-200">Password</label>
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                onFocus={() => gsap.to(".focus-glow-pass", { opacity: 1, duration: 0.2 })}
+                onBlur={() => gsap.to(".focus-glow-pass", { opacity: 0, duration: 0.2 })}
+                className="rounded-xl border-white/30 bg-white/90 shadow-sm backdrop-blur placeholder:text-gray-400 dark:border-white/15 dark:bg-white/10 dark:shadow-none"
+              />
+              <div className="focus-glow-pass pointer-events-none absolute inset-0 -z-10 rounded-xl opacity-0 ring-2 ring-emerald-400/40 blur-sm" />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 dark:text-gray-300 dark:hover:text-white"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
 
           {error && (

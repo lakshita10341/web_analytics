@@ -59,7 +59,8 @@ export default function SitesPage() {
     const snippet = `<script>
   window.__SITE_ID__ = "${siteId}";
 </script>
-<script src="http://localhost:3000/tracker.js"></script>`;
+<script src="http://localhost:8000/static/tracker/tracker.js
+"></script>`;
     try {
       await navigator.clipboard.writeText(snippet);
       // briefly show "Copied" state then dismiss

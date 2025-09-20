@@ -1,7 +1,10 @@
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Line, LineChart, AreaChart, Area, Legend } from "recharts";
 
+type DataValue = string | number | undefined;
+type DataPoint = Record<string, DataValue>;
+
 type Props = {
-  data: any[];
+  data: DataPoint[];
   xKey: string;
   yKey?: string; // kept for backward compatibility
   yKeys?: string[]; // multiple series
@@ -15,7 +18,7 @@ export default function BarOrLine({ data, xKey, yKey, yKeys, type, height = 320,
 
   const series = (yKeys && yKeys.length > 0) ? yKeys : (yKey ? [yKey] : []);
 
-  let chartElement: React.ReactElement | null = null;
+  let chartElement: JSX.Element | null = null;
   if (type === "bar") {
     chartElement = (
       <BarChart data={data}>
