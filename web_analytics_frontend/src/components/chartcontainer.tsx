@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import BarOrLine from "./charts/BarOrLine";
 import PieChartComp from "./charts/pieChartComp";
 
-type DataValue = string | number | undefined;
 export type DataPoint = {
   date?: string;
   day?: string;

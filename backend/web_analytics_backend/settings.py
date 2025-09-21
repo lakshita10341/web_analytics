@@ -79,8 +79,14 @@ TEMPLATES = [
 ]
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://web-analytics-123.vercel.app/",
+    "https://web-analytics-123.vercel.app",
 ]
+
+# Allow Vercel preview deployments (optional). Comment out if you want strict allowlist only.
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+]
+
 WSGI_APPLICATION = 'web_analytics_backend.wsgi.application'
 
 
