@@ -118,11 +118,17 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
     } catch (error: unknown) {
       let message = "Authentication failed";
       if (axios.isAxiosError(error)) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        message = (error.response?.data as any)?.error || error.message || message;
+        const data = error.response?.data;
+        if (data && typeof data === "object" && "error" in data) {
+          // TypeScript now knows 'error' exists in data
+          message = (data as { error?: string }).error ?? error.message ?? message;
+        } else {
+          message = error.message ?? message;
+        }
       } else if (error instanceof Error) {
         message = error.message;
       }
+      
       setError(message);
       // subtle shake on error
       gsap.fromTo(

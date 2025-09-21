@@ -16,7 +16,7 @@ services:
 
   backend:
     build: ./backend
-    command: gunicorn backend.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn web_analytics_backend.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - ./backend:/app
     environment:
@@ -36,11 +36,12 @@ services:
     volumes:
       - ./web_analytics_frontend:/app
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_BASE=http://backend:8000/api
     depends_on:
       - backend
     ports:
       - "3000:3000"
+    command: npm start
 
 volumes:
   postgres_data:

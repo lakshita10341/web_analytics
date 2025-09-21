@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import KPICard from "@/components/KPICard";
 import ChartContainer from "@/components/chartcontainer";
 import { fetchJSON } from "@/lib/api";
-import { useParams } from "next/navigation";
+
 
 interface DashboardPageProps {
   params: { site_id: string };

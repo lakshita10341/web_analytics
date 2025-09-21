@@ -6,7 +6,19 @@ import BarOrLine from "./charts/BarOrLine";
 import PieChartComp from "./charts/pieChartComp";
 
 type DataValue = string | number | undefined;
-export type DataPoint = Record<string, DataValue> & { date?: string; name?: string; value?: number; count?: number; views?: number };
+export type DataPoint = {
+  date?: string;
+  day?: string;
+  label?: string;
+  name?: string;
+  value?: number;
+  count?: number;
+  views?: number;
+  sessions?: number;
+  source?: string;
+  country?: string;
+  url?: string;
+};
 
 type Props = {
   title: string;
@@ -53,10 +65,26 @@ export default function ChartContainer({ title, data = [], chartKind = "time-ser
       </div>
 
       {type === "pie" || chartKind === "pie" ? (
-        <PieChartComp data={data.map(d => ({ name: (d as any).name || (d as any).source || (d as any).country || (d as any).url, value: (d as any).count || (d as any).views || (d as any).value }))} />
-      ) : (
-        <BarOrLine data={data.map(d => ({ ...d, date: ((d as any).date || (d as any).day || (d as any).label) }))} xKey={xKey} yKey={yKey} yKeys={yKeys} type={type === "pie" ? "bar" : type} colors={colors} />
-      )}
+  <PieChartComp
+    data={data.map(d => ({
+      name: d.name ?? d.source ?? d.country ?? d.url ?? "Unknown",
+      value: d.count ?? d.views ?? d.value ?? 0,
+    }))}
+  />
+) : (
+  <BarOrLine
+    data={data.map(d => ({
+      ...d,
+      date: d.date ?? d.day ?? d.label ?? "",
+    }))}
+    xKey={xKey}
+    yKey={yKey}
+    yKeys={yKeys}
+    type={type} // safe: "bar" | "line" | "area"
+    colors={colors}
+  />
+)}
+
     </motion.div>
   );
 }

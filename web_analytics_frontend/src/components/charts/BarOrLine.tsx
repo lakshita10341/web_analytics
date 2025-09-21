@@ -1,3 +1,4 @@
+import { JSX } from "react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Line, LineChart, AreaChart, Area, Legend } from "recharts";
 
 type DataValue = string | number | undefined;
@@ -57,11 +58,12 @@ export default function BarOrLine({ data, xKey, yKey, yKeys, type, height = 320,
     );
   }
 
-  return (
-    <div style={{ width: "100%", height }}>
-      <ResponsiveContainer>
-        {chartElement}
-      </ResponsiveContainer>
-    </div>
+  return chartElement ? (
+    <ResponsiveContainer width="100%" height={height}>
+      {chartElement}
+    </ResponsiveContainer>
+  ) : (
+    <div className="p-6 text-center text-gray-400">No data to display</div>
   );
+  
 }
