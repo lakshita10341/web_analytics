@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { createSite, fetchJSON } from "@/lib/api";
 
 interface Site {
   id: number;
@@ -24,11 +25,8 @@ export default function SitesPage() {
 
   useEffect(() => {
     async function fetchSites() {
-      if (!token) return;
-      const res = await axios.get("http://localhost:8000/api/sites/", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setSites(res.data);
+      const data = await fetchJSON("/sites/");
+      setSites(data);
     }
     fetchSites();
   }, []);
@@ -36,16 +34,7 @@ export default function SitesPage() {
   async function handleAddSite() {
     if (!domain.trim()) return;
     try {
-      const res = await axios.post(
-        "http://localhost:8000/api/create-site/",
-        { domain },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const res = await createSite(domain);
       setSites((prev) => [...prev, res.data]);
       setNewSite(res.data); // store the newly added site
       setShowSnippet(true); // show floating snippet card

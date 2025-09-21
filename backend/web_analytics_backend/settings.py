@@ -21,12 +21,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY =os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv('SECRET_KEY', "mysecretkey")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -85,7 +85,7 @@ WSGI_APPLICATION = 'web_analytics_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME',"postgres"),
+        'NAME': os.getenv('DB_NAME',"analytics"),
         'USER': os.getenv('DB_USER',"postgres"),
         'PASSWORD': os.getenv('DB_PASSWORD',"postgres"),
         'HOST': os.getenv('DB_HOST',"localhost"),
@@ -124,7 +124,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-
+CORS_ALLOW_CREDENTIALS = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 

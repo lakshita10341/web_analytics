@@ -174,11 +174,7 @@ export default function DashboardPage({ params }: DashboardPageProps) {
             </ul>
           </div>
           <div className="md:col-span-2">
-            {geoData.length > 0 ? (
-              <div className="h-56 rounded-md bg-gradient-to-r from-indigo-50 to-white dark:from-white/10 dark:to-white/5 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                Map visualization placeholder — integrate react-simple-maps
-              </div>
-            ) : (
+           
               <div className="h-56 rounded-xl border border-white/30 dark:border-white/10 bg-white/60 dark:bg-white/5 backdrop-blur flex items-center justify-between gap-4 p-4">
                 <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
                   <div className="font-semibold">No geography data yet</div>
@@ -189,7 +185,7 @@ export default function DashboardPage({ params }: DashboardPageProps) {
 </script>
 <script src="http://localhost:3000/tracker.js"></script>`}</pre>
               </div>
-            )}
+            
           </div>
         </div>
       </motion.div>

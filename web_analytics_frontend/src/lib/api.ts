@@ -15,7 +15,7 @@ export async function fetchJSON(path: string) {
 
 export async function createSite(domain: string) {
   const res = await axios.post(
-    "/api/create_site",
+    `${API_BASE}/create_site`,
     { domain },
     { withCredentials: true, headers: { "Content-Type": "application/json" } }
   );
