@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8000/api";
+export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://webanalytics-production.up.railway.app/api";
 
 async function getAuthHeaders() {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -14,10 +14,11 @@ export async function fetchJSON(path: string) {
 }
 
 export async function createSite(domain: string) {
+  const headers = await getAuthHeaders();
   const res = await axios.post(
-    `${API_BASE}/create_site`,
+    `${API_BASE}/create_site/`,
     { domain },
-    { withCredentials: true, headers: { "Content-Type": "application/json" } }
+    {  headers: { "Content-Type": "application/json", ...headers } }
   );
   return res.data;
 }

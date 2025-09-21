@@ -50,6 +50,8 @@ def track_event(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_site(request):
+    if not request.user.is_authenticated:
+        return Response({"error": "must be logged in"}, status=403)
     domain = request.data.get("domain")
     if not domain:
         return Response({"error": "domain required"}, status=400)

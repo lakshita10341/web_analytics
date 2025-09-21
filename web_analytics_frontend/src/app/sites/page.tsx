@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -34,9 +33,9 @@ export default function SitesPage() {
   async function handleAddSite() {
     if (!domain.trim()) return;
     try {
-      const res = await createSite(domain);
-      setSites((prev) => [...prev, res.data]);
-      setNewSite(res.data); // store the newly added site
+      const created = await createSite(domain);
+      setSites((prev) => [...prev, created]);
+      setNewSite(created); // store the newly added site
       setShowSnippet(true); // show floating snippet card
       setDomain("");
     } catch (err) {
@@ -103,7 +102,7 @@ export default function SitesPage() {
         <ul className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {sites.map((site, idx) => (
             <motion.li
-              key={site.id}
+              key={site.site_id}
               initial={{ opacity: 0, y: 18 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-40px" }}
