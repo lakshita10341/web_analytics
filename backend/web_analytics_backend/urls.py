@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from analytics.views import register_user, create_site, track_event, page_views, sessions_metrics, new_vs_returning, sources, devices, browsers, geography, list_sites, tracker_js
+from analytics.views import register_user, create_site, track_event, page_views, sessions_metrics, new_vs_returning, sources, devices, browsers, geography, list_sites, tracker_js, kpis
 from rest_framework.decorators import api_view, permission_classes
 
 urlpatterns = [
@@ -36,4 +36,5 @@ urlpatterns = [
     path("api/analytics/devices/<str:site_id>/", devices, name="devices"),
     path("api/analytics/browsers/<str:site_id>/", browsers, name="browsers"),
     path("api/analytics/geography/<str:site_id>/", geography, name="geography"),
+    path("api/analytics/kpis/<str:site_id>/", kpis, name="kpis"),
 ]

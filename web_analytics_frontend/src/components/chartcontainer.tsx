@@ -32,7 +32,7 @@ type Props = {
 };
 
 export default function ChartContainer({ title, data = [], chartKind = "time-series", xKey = "date", yKey = "views", yKeys, subtitle, colors }: Props) {
-  const [type, setType] = useState<"bar" | "line" | "area" | "pie">("bar");
+  const [type, setType] = useState<"bar" | "line" | "area" | "pie">(chartKind === "pie" ? "pie" : "bar");
 
   // choose default types by kind
   const typeOptions = chartKind === "pie" ? ["pie"] : ["bar", "line", "area"];
@@ -57,9 +57,23 @@ export default function ChartContainer({ title, data = [], chartKind = "time-ser
           {subtitle ? <div className="text-xs text-gray-500 mt-1 dark:text-gray-400">{subtitle}</div> : null}
         </div>
         <div>
-          <select className="border rounded px-2 py-1 dark:bg-transparent dark:border-white/20" value={type} onChange={(e) => setType(e.target.value as "bar" | "line" | "area" | "pie")}>
-            {typeOptions.map(t => <option key={t} value={t}>{t.toUpperCase()}</option>)}
-          </select>
+          {typeOptions.length > 1 && (
+            <select
+              className="border rounded px-2 py-1 bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 dark:border-white/20 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              value={type}
+              onChange={(e) => setType(e.target.value as "bar" | "line" | "area" | "pie")}
+            >
+              {typeOptions.map((t) => (
+                <option
+                  key={t}
+                  value={t}
+                  className="bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
+                >
+                  {t.toUpperCase()}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 

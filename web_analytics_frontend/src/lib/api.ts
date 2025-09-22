@@ -89,6 +89,12 @@ export async function fetchJSON(path: string) {
   return res.data;
 }
 
+// New: GET with params helper
+export async function fetchJSONWithParams(path: string, params?: Record<string, any>) {
+  const res = await api.get(path, { params });
+  return res.data;
+}
+
 export async function createSite(domain: string) {
   const res = await api.post(`/create_site/`, { domain });
   return res.data;

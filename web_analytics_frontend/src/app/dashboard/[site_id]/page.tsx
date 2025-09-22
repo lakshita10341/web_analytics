@@ -5,8 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import KPICard from "@/components/KPICard";
 import ChartContainer from "@/components/chartcontainer";
-import { fetchJSON } from "@/lib/api";
-
+import { fetchJSON, fetchJSONWithParams } from "@/lib/api";
 
 interface DashboardPageProps {
   params: { site_id: string };
@@ -22,6 +21,12 @@ interface BrowserItem { browser: string; count: number }
 interface GeoItem { country: string; count: number }
 interface DailyNVR { date: string; new_sessions: number; returning_sessions: number }
 interface NewVsReturning { new: number; returning: number; daily: DailyNVR[] }
+interface KPIs {
+  period: { start: string; end: string };
+  compare: { start: string; end: string } | null;
+  totals: { page_views: number; sessions: number; users: number; top_country: string };
+  deltas: { page_views_pct: number; sessions_pct: number; users_pct: number } | null;
+}
 
 export default function DashboardPage({ params }: DashboardPageProps) {
   const { site_id } = params;
@@ -37,60 +42,81 @@ export default function DashboardPage({ params }: DashboardPageProps) {
   const [browsersData, setBrowsersData] = useState<BrowserItem[]>([]);
   const [geoData, setGeoData] = useState<GeoItem[]>([]);
   const [newVsReturning, setNewVsReturning] = useState<NewVsReturning>({ new: 0, returning: 0, daily: [] });
+  const [kpis, setKpis] = useState<KPIs | null>(null);
+
+  // Filters
+  const [preset, setPreset] = useState<string>("last_30d");
+  const [services, setServices] = useState<string>(""); // comma-separated utm_source
+  const [posts, setPosts] = useState<string>(""); // comma-separated URL prefixes
+  const [compare, setCompare] = useState<boolean>(true);
 
   useEffect(() => {
+    const params = {
+      preset,
+      compare: String(compare),
+      ...(services ? { services } : {}),
+      ...(posts ? { posts } : {}),
+    } as Record<string, string>;
+
     const load = async () => {
       try {
-        const pv = await fetchJSON(`/analytics/pages/${site_id}/`);
+        const pv = await fetchJSONWithParams(`/analytics/pages/${site_id}/`, params);
         setPageViewsData(pv);
       } catch (e) {
         setPageViewsData({ trend: [], top_pages: [] });
       }
 
       try {
-        const ses = await fetchJSON(`/analytics/sessions/${site_id}/`);
+        const ses = await fetchJSONWithParams(`/analytics/sessions/${site_id}/`, params);
         setSessionsData(ses);
       } catch (e) {
         setSessionsData({ session_count: 0, avg_duration_seconds: 0, trend: [] });
       }
 
       try {
-        const src = await fetchJSON(`/analytics/sources/${site_id}/`);
+        const src = await fetchJSONWithParams(`/analytics/sources/${site_id}/`, params);
         setSourcesData(src);
       } catch (e) {
         setSourcesData([]);
       }
 
       try {
-        const dev = await fetchJSON(`/analytics/devices/${site_id}/`);
+        const dev = await fetchJSONWithParams(`/analytics/devices/${site_id}/`, params);
         setDevicesData(dev);
       } catch (e) {
         setDevicesData([]);
       }
 
       try {
-        const br = await fetchJSON(`/analytics/browsers/${site_id}/`);
+        const br = await fetchJSONWithParams(`/analytics/browsers/${site_id}/`, params);
         setBrowsersData(br);
       } catch (e) {
         setBrowsersData([]);
       }
 
       try {
-        const geo = await fetchJSON(`/analytics/geography/${site_id}/`);
+        const geo = await fetchJSONWithParams(`/analytics/geography/${site_id}/`, params);
         setGeoData(geo);
       } catch (e) {
         setGeoData([]);
       }
 
       try {
-        const nvr = await fetchJSON(`/analytics/new-vs-returning/${site_id}/`);
+        const nvr = await fetchJSONWithParams(`/analytics/new-vs-returning/${site_id}/`, params);
         setNewVsReturning(nvr);
       } catch (e) {
         setNewVsReturning({ new: 0, returning: 0, daily: [] });
       }
+
+      try {
+        const k = await fetchJSONWithParams(`/analytics/kpis/${site_id}/`, params);
+        setKpis(k);
+      } catch (e) {
+        setKpis(null);
+      }
     };
     load();
-  }, [site_id]);
+  }, [site_id, preset, services, posts, compare]);
 
   // Merge page views and sessions trends by date so we can show both series in one chart
   const mergedTrend = useMemo(() => {
@@ -124,11 +150,38 @@ export default function DashboardPage({ params }: DashboardPageProps) {
         <div className="text-sm text-gray-500 dark:text-gray-400">Site: <span className="font-mono">{site_id}</span></div>
       </motion.div>
 
+      {/* Filter Bar */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div>
+          <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">Date range</label>
+          <select value={preset} onChange={(e) => setPreset(e.target.value)} className="w-full rounded-md border border-gray-300 bg-white/80 p-2 text-sm dark:border-white/10 dark:bg-white/5">
+            <option value="last_7d">Last 7 days</option>
+            <option value="last_14d">Last 14 days</option>
+            <option value="last_30d">Last 30 days</option>
+            <option value="this_month">This month</option>
+            <option value="last_month">Last month</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">Services (utm_source)</label>
+          <input value={services} onChange={(e) => setServices(e.target.value)} placeholder="e.g. google,twitter" className="w-full rounded-md border border-gray-300 bg-white/80 p-2 text-sm dark:border-white/10 dark:bg-white/5" />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-600 dark:text-gray-300 mb-1">Posts (URL prefixes)</label>
+          <input value={posts} onChange={(e) => setPosts(e.target.value)} placeholder="e.g. /blog,/guides" className="w-full rounded-md border border-gray-300 bg-white/80 p-2 text-sm dark:border-white/10 dark:bg-white/5" />
+        </div>
+        <div className="flex items-end">
+          <label className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <input type="checkbox" checked={compare} onChange={(e) => setCompare(e.target.checked)} /> Compare vs previous
+          </label>
+        </div>
+      </div>
+
       <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }} transition={{ duration: 0.35 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard title="Page Views (30d)" value={pageViewsData?.trend?.reduce?.((a: number, b: { views: number }) => a + (b.views || 0), 0) || "—"} subtitle="Total views in selected range" />
-        <KPICard title="Sessions" value={sessionsData?.session_count ?? "—"} subtitle={`Avg session: ${Math.round(sessionsData?.avg_duration_seconds || 0)}s`} />
-        <KPICard title="New Users" value={newVsReturning?.new?.toLocaleString() || "—"} subtitle={`${newVsReturning?.returning?.toLocaleString() || 0} returning`} />
-        <KPICard title="Top Country" value={geoData?.[0]?.country || "—"} subtitle={`${geoData?.[0]?.count || 0} visitors`} />
+        <KPICard title="Page Views" value={(kpis?.totals.page_views ?? pageViewsData?.trend?.reduce?.((a: number, b: { views: number }) => a + (b.views || 0), 0)) || "—"} subtitle={kpis?.deltas ? `${kpis.deltas.page_views_pct >= 0 ? "↑" : "↓"} ${Math.abs(kpis.deltas.page_views_pct).toFixed(0)}% vs prev` : "Total views in selected range"} />
+        <KPICard title="Sessions" value={kpis?.totals.sessions ?? sessionsData?.session_count ?? "—"} subtitle={kpis?.deltas ? `${kpis.deltas.sessions_pct >= 0 ? "↑" : "↓"} ${Math.abs(kpis.deltas.sessions_pct).toFixed(0)}% vs prev` : `Avg session: ${Math.round(sessionsData?.avg_duration_seconds || 0)}s`} />
+        <KPICard title="Users" value={(kpis?.totals.users ?? newVsReturning?.new?.toLocaleString()) || "—"} subtitle={kpis?.deltas ? `${kpis.deltas.users_pct >= 0 ? "↑" : "↓"} ${Math.abs(kpis.deltas.users_pct).toFixed(0)}% vs prev` : `${newVsReturning?.returning?.toLocaleString() || 0} returning`} />
+        <KPICard title="Top Country" value={kpis?.totals.top_country || geoData?.[0]?.country || "—"} subtitle={`${geoData?.[0]?.count || 0} visitors`} />
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-40px" }} transition={{ duration: 0.35 }} className="grid grid-cols-1 lg:grid-cols-2 gap-6">

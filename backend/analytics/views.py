@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from django.db.models import Count, Avg, Min, Max
+from django.db.models import Count, Avg, Min, Max, Q
 from django.utils import timezone
 from datetime import timedelta
 from .models import Event, Site
@@ -363,3 +363,149 @@ def geography(request, site_id):
         counts[key] = counts.get(key, 0) + 1
     out = [{"country": k, "count": v} for k, v in sorted(counts.items(), key=lambda x: -x[1])]
     return Response(out)
+
+from django.db.models import Q
+
+def _parse_date_range(request):
+    """Parse start/end or preset/days into a datetime window.
+    Supports:
+      - start=YYYY-MM-DD&end=YYYY-MM-DD
+      - preset in {last_7d,last_14d,last_30d,this_month,last_month}
+      - days=N (fallback, default 30)
+    Returns (since, until) where until is now if not specified.
+    """
+    now = timezone.now()
+    start = request.query_params.get("start")
+    end = request.query_params.get("end")
+    preset = request.query_params.get("preset")
+    days = request.query_params.get("days")
+
+    if start and end:
+        try:
+            since = dateutil.parser.isoparse(start)
+            until = dateutil.parser.isoparse(end)
+            return since, until
+        except Exception:
+            pass
+
+    if preset:
+        from calendar import monthrange
+        if preset == "last_7d":
+            return now - timedelta(days=7), now
+        if preset == "last_14d":
+            return now - timedelta(days=14), now
+        if preset == "last_30d":
+            return now - timedelta(days=30), now
+        if preset == "this_month":
+            first = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            return first, now
+        if preset == "last_month":
+            first_this = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            last_month_end = first_this - timedelta(seconds=1)
+            first_last = last_month_end.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            return first_last, last_month_end
+
+    try:
+        d = int(days) if days is not None else 30
+    except Exception:
+        d = 30
+    return now - timedelta(days=d), now
+
+def _apply_segment_filters(qs, request):
+    """Apply optional filters to an Event queryset.
+    - services: comma-separated utm_source values (case-insensitive)
+    - posts: url path prefix (single value or comma-separated), matches startswith
+    """
+    services = request.query_params.get("services")
+    posts = request.query_params.get("posts")
+
+    if services:
+        parts = [p.strip().lower() for p in services.split(",") if p.strip()]
+        if parts:
+            cond = Q()
+            for p in parts:
+                cond |= Q(utm_source__iexact=p)
+            qs = qs.filter(cond)
+
+    if posts:
+        prefixes = [p.strip() for p in posts.split(",") if p.strip()]
+        cond = Q()
+        for pref in prefixes:
+            cond |= Q(url__startswith=pref)
+        if prefixes:
+            qs = qs.filter(cond)
+    return qs
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def kpis(request, site_id):
+    """Aggregate KPIs for the dashboard, with optional comparison window.
+    Returns:
+    {
+      period: { start, end },
+      compare: { start, end } | null,
+      totals: {
+        page_views, sessions, users, top_country
+      },
+      deltas: { page_views_pct, sessions_pct, users_pct } | null
+    }
+    """
+    site = ensure_site_belongs_to_user(request.user, site_id)
+    if not site:
+        return Response({"error": "not allowed"}, status=403)
+
+    since, until = _parse_date_range(request)
+    compare_flag = str(request.query_params.get("compare", "false")).lower() in ("1", "true", "yes")
+
+    base_qs = Event.objects.filter(site=site, timestamp__gte=since, timestamp__lte=until)
+    base_qs = _apply_segment_filters(base_qs, request)
+
+    # Compute sessions: distinct session_id
+    sessions = base_qs.values("session_id").distinct().count()
+    # Users: same as sessions for now (can switch to visitor_id later)
+    users = sessions
+    # Page views: count of events
+    page_views_cnt = base_qs.count()
+    # Top country
+    top_country = (
+        base_qs.values("country").annotate(c=Count("id")).order_by("-c").first()
+    )
+    top_country_name = top_country.get("country") if top_country else None
+
+    res = {
+        "period": {"start": since, "end": until},
+        "compare": None,
+        "totals": {
+            "page_views": page_views_cnt,
+            "sessions": sessions,
+            "users": users,
+            "top_country": top_country_name or "Unknown",
+        },
+        "deltas": None,
+    }
+
+    if compare_flag:
+        # mirror window backward
+        window = until - since
+        prev_end = since
+        prev_start = prev_end - window
+        prev_qs = Event.objects.filter(site=site, timestamp__gte=prev_start, timestamp__lte=prev_end)
+        prev_qs = _apply_segment_filters(prev_qs, request)
+
+        prev_sessions = prev_qs.values("session_id").distinct().count()
+        prev_users = prev_sessions
+        prev_page_views = prev_qs.count()
+
+        def pct(cur, prev):
+            if prev == 0:
+                return 100.0 if cur > 0 else 0.0
+            return ((cur - prev) / prev) * 100.0
+
+        res["compare"] = {"start": prev_start, "end": prev_end}
+        res["deltas"] = {
+            "page_views_pct": pct(page_views_cnt, prev_page_views),
+            "sessions_pct": pct(sessions, prev_sessions),
+            "users_pct": pct(users, prev_users),
+        }
+
+    return Response(res)
