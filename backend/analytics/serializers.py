@@ -23,11 +23,12 @@ class EventSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
-        site_id = validated_data.pop("site_id")
+        raw_site_id = validated_data.pop("site_id", None)
+        site_id = (raw_site_id or "").strip()
         from .models import Site
-        site = Site.objects.filter(site_id=site_id).first()
+        site = Site.objects.filter(site_id__iexact=site_id).first()
         if not site:
-            raise serializers.ValidationError({"site_id": "invalid site_id"})
+            raise serializers.ValidationError({"site_id": f"invalid site_id: {raw_site_id!r}"})
         event = Event.objects.create(site=site, **validated_data)
         return event
 

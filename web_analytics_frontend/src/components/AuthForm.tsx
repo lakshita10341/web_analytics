@@ -46,10 +46,10 @@ export default function AuthForm({ mode }: Props) {
           body: JSON.stringify({ username, password }),
         });
         if (!res.ok) throw new Error(await res.text());
-        // after signup, auto-login
+    
       }
 
-      // login
+   
       const loginRes = await fetch(`${API_BASE}/login/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -58,13 +58,12 @@ export default function AuthForm({ mode }: Props) {
       if (!loginRes.ok) throw new Error(await loginRes.text());
       const data = await loginRes.json();
       const access = data.access || data.token || data.access_token;
+      const refresh = data.refresh || data.refresh_token || null;
       if (!access) throw new Error("No access token returned");
-      // persist token for API calls and route guards
-      localStorage.setItem("token", access);
-      // also set a cookie so SSR/middleware could read if needed
-      document.cookie = `token=${access}; path=/; max-age=${60 * 60 * 24 * 7}`;
 
-      // small success animation then redirect
+      localStorage.setItem("token", access);
+      if (refresh) localStorage.setItem("refresh", refresh);
+     
       gsap.to(".auth-card", { scale: 1.02, duration: 0.15, yoyo: true, repeat: 1, ease: "power1.inOut" });
       setTimeout(() => router.push("/sites"), 350);
     } catch (err: unknown) {

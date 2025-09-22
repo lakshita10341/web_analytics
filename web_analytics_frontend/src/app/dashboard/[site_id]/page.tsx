@@ -106,6 +106,11 @@ export default function DashboardPage({ params }: DashboardPageProps) {
     return Object.values(byDate).sort((a, b) => (a.date > b.date ? 1 : -1));
   }, [pageViewsData, sessionsData]);
 
+  // Sort geography data by count desc for nicer display
+  const sortedGeo = useMemo(() => {
+    return [...geoData].sort((a, b) => b.count - a.count);
+  }, [geoData]);
+
   return (
     <div className="relative p-6 md:p-8 space-y-6">
       {/* decorative bg */}
@@ -162,19 +167,27 @@ export default function DashboardPage({ params }: DashboardPageProps) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <ul>
-              {geoData.map((c: GeoItem, i: number) => (
+              {sortedGeo.map((c: GeoItem, i: number) => (
                 <motion.li key={i} initial={{ opacity: 0, y: 6 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.25, delay: i * 0.02 }} className="flex justify-between border-b border-white/40 py-2 dark:border-white/10">
                   <span className="text-gray-700 dark:text-gray-300">{c.country}</span>
                   <span className="font-semibold">{c.count}</span>
                 </motion.li>
               ))}
-              {geoData.length === 0 && (
+              {sortedGeo.length === 0 && (
                 <li className="text-sm text-gray-500 dark:text-gray-400 py-2">No geography data yet.</li>
               )}
             </ul>
           </div>
           <div className="md:col-span-2">
-           
+            {sortedGeo.length > 0 ? (
+              <ChartContainer
+                title="Top Countries"
+                data={sortedGeo.map((g: GeoItem) => ({ name: g.country, value: g.count }))}
+                chartKind="categorical"
+                xKey="name"
+                yKey="value"
+              />
+            ) : (
               <div className="h-56 rounded-xl border border-white/30 dark:border-white/10 bg-white/60 dark:bg-white/5 backdrop-blur flex items-center justify-between gap-4 p-4">
                 <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
                   <div className="font-semibold">No geography data yet</div>
@@ -183,9 +196,9 @@ export default function DashboardPage({ params }: DashboardPageProps) {
                 <pre className="hidden md:block max-w-[60%] overflow-auto rounded-lg bg-black p-3 text-xs text-green-400">{`<script>
   window.__SITE_ID__ = "${site_id}";
 </script>
-<script src="http://localhost:3000/tracker.js"></script>`}</pre>
+<script src="https://lakshitajain.pythonanywhere.com/api/tracker/"></script>`}</pre>
               </div>
-            
+            )}
           </div>
         </div>
       </motion.div>

@@ -1,3 +1,8 @@
 .env
 /staticfiles
 /db.sqlite3
+__pycache__
+/web_analytics_backend/__pycache__
+/analytics/migrations
+/analytics/__pycache__
+

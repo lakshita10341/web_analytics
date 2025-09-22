@@ -10,6 +10,57 @@ from .serializers import EventSerializer, SiteSerializer
 import dateutil.parser
 from django.contrib.auth.models import User
 
+from django.http import HttpResponse
+from django.views.decorators.http import require_GET
+
+@require_GET
+def tracker_js(request):
+    js_code = """
+   (function() {
+  // Read site id from a global or from the current script tag data attribute
+  const scriptEl = document.currentScript;
+  const siteId = window.SITE_ID || (scriptEl && scriptEl.dataset && scriptEl.dataset.siteId) || window.__SITE_ID__;
+
+  // Simple cookie helpers
+  function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, '\\$1') + '=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+  function setCookie(name, value, days) {
+    const d = new Date();
+    d.setTime(d.getTime() + (days*24*60*60*1000));
+    const expires = 'expires=' + d.toUTCString();
+    document.cookie = name + '=' + encodeURIComponent(value) + '; ' + expires + '; path=/; SameSite=Lax';
+  }
+
+  // Ensure we have a persistent session id
+  let sessionId = getCookie('wa_session_id');
+  if (!sessionId) {
+    sessionId = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now();
+    setCookie('wa_session_id', sessionId, 1); // 1 day
+  }
+
+  const eventData = {
+    site_id: siteId,
+    url: window.location.href,
+    referrer: document.referrer,
+    user_agent: navigator.userAgent,
+    language: navigator.language,
+    screen_width: window.innerWidth,
+    screen_height: window.innerHeight,
+    session_id: sessionId,
+  };
+
+  // Post to local backend ingest endpoint
+  fetch("https://lakshitajain.pythonanywhere.com/track/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(eventData),
+    credentials: 'include', // allow cookie roundtrip
+  }).catch(err => console.error("Tracking error:", err));
+})();
+    """
+    return HttpResponse(js_code, content_type="application/javascript")
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -31,7 +82,19 @@ def register_user(request):
 @permission_classes([AllowAny])
 def track_event(request):
     data = request.data.copy()
-    # ensure timestamp exists and parsed to timezone-aware if string
+    # DEBUG: log incoming payload and site existence
+    try:
+        incoming_site_id = data.get("site_id")
+        site_exists = False
+        cleaned = None
+        if incoming_site_id is not None:
+            cleaned = str(incoming_site_id)
+            site_exists = Site.objects.filter(site_id=cleaned).exists()
+        print(
+            f"[track_event] site_id raw={repr(incoming_site_id)} len={len(incoming_site_id) if isinstance(incoming_site_id, str) else 'n/a'} exists={site_exists}"
+        )
+    except Exception as e:
+        print(f"[track_event] debug error: {e}")
     if "timestamp" in data:
         try:
             data["timestamp"] = dateutil.parser.isoparse(data["timestamp"])
