@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://webanalytics-production.up.railway.app/api";
+export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://lakshitajain.pythonanywhere.com/api";
 
 async function getAuthHeaders() {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
