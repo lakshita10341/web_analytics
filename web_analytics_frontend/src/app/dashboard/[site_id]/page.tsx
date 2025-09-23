@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import KPICard from "@/components/KPICard";
 import ChartContainer from "@/components/chartcontainer";
-import { fetchJSON, fetchJSONWithParams } from "@/lib/api";
+import { fetchJSONWithParams } from "@/lib/api";
 
 interface DashboardPageProps {
   params: { site_id: string };
@@ -62,56 +62,56 @@ export default function DashboardPage({ params }: DashboardPageProps) {
       try {
         const pv = await fetchJSONWithParams(`/analytics/pages/${site_id}/`, params);
         setPageViewsData(pv);
-      } catch (e) {
+      } catch (_e) {
         setPageViewsData({ trend: [], top_pages: [] });
       }
 
       try {
         const ses = await fetchJSONWithParams(`/analytics/sessions/${site_id}/`, params);
         setSessionsData(ses);
-      } catch (e) {
+      } catch (_e) {
         setSessionsData({ session_count: 0, avg_duration_seconds: 0, trend: [] });
       }
 
       try {
         const src = await fetchJSONWithParams(`/analytics/sources/${site_id}/`, params);
         setSourcesData(src);
-      } catch (e) {
+      } catch (_e) {
         setSourcesData([]);
       }
 
       try {
         const dev = await fetchJSONWithParams(`/analytics/devices/${site_id}/`, params);
         setDevicesData(dev);
-      } catch (e) {
+      } catch (_e) {
         setDevicesData([]);
       }
 
       try {
         const br = await fetchJSONWithParams(`/analytics/browsers/${site_id}/`, params);
         setBrowsersData(br);
-      } catch (e) {
+      } catch (_e) {
         setBrowsersData([]);
       }
 
       try {
         const geo = await fetchJSONWithParams(`/analytics/geography/${site_id}/`, params);
         setGeoData(geo);
-      } catch (e) {
+      } catch (_e) {
         setGeoData([]);
       }
 
       try {
         const nvr = await fetchJSONWithParams(`/analytics/new-vs-returning/${site_id}/`, params);
         setNewVsReturning(nvr);
-      } catch (e) {
+      } catch (_e) {
         setNewVsReturning({ new: 0, returning: 0, daily: [] });
       }
 
       try {
         const k = await fetchJSONWithParams(`/analytics/kpis/${site_id}/`, params);
         setKpis(k);
-      } catch (e) {
+      } catch (_e) {
         setKpis(null);
       }
     };

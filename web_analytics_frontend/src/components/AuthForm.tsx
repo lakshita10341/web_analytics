@@ -19,6 +19,16 @@ export default function AuthForm({ mode }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Redirect if token exists
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      if (token) {
+        router.replace("/sites");
+      }
+    }
+  }, [router]);
+
   useEffect(() => {
     if (!containerRef.current) return;
     const ctx = gsap.context(() => {
@@ -46,10 +56,8 @@ export default function AuthForm({ mode }: Props) {
           body: JSON.stringify({ username, password }),
         });
         if (!res.ok) throw new Error(await res.text());
-    
       }
 
-   
       const loginRes = await fetch(`${API_BASE}/login/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,7 +82,7 @@ export default function AuthForm({ mode }: Props) {
 
       localStorage.setItem("token", access);
       if (refresh) localStorage.setItem("refresh", refresh);
-     
+
       gsap.to(".auth-card", { scale: 1.02, duration: 0.15, yoyo: true, repeat: 1, ease: "power1.inOut" });
       setTimeout(() => router.push("/sites"), 350);
     } catch (err: unknown) {
@@ -168,11 +176,17 @@ export default function AuthForm({ mode }: Props) {
           <div className="pt-2 text-center text-sm text-gray-500 dark:text-gray-400">
             {mode === "login" ? (
               <span>
-                Don&apos;t have an account? <a href="/signup" className="text-primary underline-offset-4 hover:underline">Sign up</a>
+                Don&apos;t have an account?{" "}
+                <a href="/signup" className="text-primary underline-offset-4 hover:underline">
+                  Sign up
+                </a>
               </span>
             ) : (
               <span>
-                Already have an account? <a href="/login" className="text-primary underline-offset-4 hover:underline">Log in</a>
+                Already have an account?{" "}
+                <a href="/login" className="text-primary underline-offset-4 hover:underline">
+                  Log in
+                </a>
               </span>
             )}
           </div>

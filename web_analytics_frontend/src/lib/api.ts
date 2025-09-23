@@ -90,7 +90,7 @@ export async function fetchJSON(path: string) {
 }
 
 // New: GET with params helper
-export async function fetchJSONWithParams(path: string, params?: Record<string, any>) {
+export async function fetchJSONWithParams(path: string, params?: Record<string, unknown>) {
   const res = await api.get(path, { params });
   return res.data;
 }

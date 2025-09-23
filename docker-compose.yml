@@ -4,7 +4,7 @@ version: "3.9"
 services:
   backend:
     build: ./backend
-    command: sh -c "python manage.py migrate && gunicorn web_analytics_backend.wsgi:application --bind 0.0.0.0:8000"
+    command: sh -c "python manage.py migrate && python manage.py seed_event && gunicorn web_analytics_backend.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - ./backend:/app
     environment:
