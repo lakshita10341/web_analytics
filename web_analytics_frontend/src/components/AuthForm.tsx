@@ -55,7 +55,18 @@ export default function AuthForm({ mode }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
-      if (!loginRes.ok) throw new Error(await loginRes.text());
+      if (!loginRes.ok) {
+        let msg = "Invalid username or password";
+        try {
+          const err = await loginRes.json();
+          if (err.detail && typeof err.detail === "string" && err.detail.trim()) {
+            msg = err.detail;
+          }
+        } catch {
+          // fallback to default
+        }
+        throw new Error(msg);
+      }
       const data = await loginRes.json();
       const access = data.access || data.token || data.access_token;
       const refresh = data.refresh || data.refresh_token || null;

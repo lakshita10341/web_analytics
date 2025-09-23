@@ -154,7 +154,7 @@ export default function SitesPage() {
             <pre className="max-h-48 overflow-auto rounded-lg bg-black p-3 text-xs text-green-400">{`<script>
   window.__SITE_ID__ = "${newSite.site_id}";
 </script>
-<script src="http://localhost:3000/tracker.js"></script>`}</pre>
+<script src="https://lakshitajain.pythonanywhere.com/api/tracker"></script>`}</pre>
             <div className="mt-3 flex items-center justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => setShowSnippet(false)} className="rounded-lg">Dismiss</Button>
               <Button size="sm" onClick={() => copySnippet(newSite.site_id)} className="rounded-lg">Copy code</Button>

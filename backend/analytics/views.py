@@ -3,6 +3,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Count, Avg, Min, Max, Q
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 from datetime import timedelta
 from .models import Event, Site
@@ -140,7 +141,6 @@ def page_views(request, site_id):
     if not site:
         return Response({"error": "not allowed"}, status=403)
 
-    from django.db.models.functions import TruncDate
     last_n_days = request.query_params.get("days", 30)
     try:
         last_n_days = int(last_n_days)
@@ -173,11 +173,9 @@ def sessions_metrics(request, site_id):
     if not site:
         return Response({"error": "not allowed"}, status=403)
 
-    # reasonable sessionization: events grouped by session_id
-    # For each session_id compute start and end times and duration.
-    from django.db.models import Min, Max
     since = timezone.now() - timedelta(days=int(request.query_params.get("days", 30)))
 
+    # Count unique sessions
     sessions = (
         Event.objects.filter(site=site, timestamp__gte=since)
         .values("session_id")
@@ -196,18 +194,20 @@ def sessions_metrics(request, site_id):
     session_count = len(session_list)
     avg_duration = total_duration_seconds / session_count if session_count else 0
 
-    # trend by day: number of sessions per day (use start date)
-    from django.db.models.functions import TruncDate
+    # Correct trend: unique sessions per day (by session start date)
     session_starts = (
         Event.objects.filter(site=site, timestamp__gte=since)
         .values("session_id")
         .annotate(start=Min("timestamp"))
         .annotate(day=TruncDate("start"))
-        .values("day")
-        .annotate(sessions=Count("session_id"))
-        .order_by("day")
+        .values("day", "session_id")
+        .distinct()
     )
-    trend = [{"date": r["day"], "sessions": r["sessions"]} for r in session_starts]
+    trend_dict = {}
+    for row in session_starts:
+        day = row["day"]
+        trend_dict[day] = trend_dict.get(day, 0) + 1
+    trend = [{"date": day, "sessions": count} for day, count in sorted(trend_dict.items())]
 
     return Response({"session_count": session_count, "avg_duration_seconds": avg_duration, "trend": trend})
 
