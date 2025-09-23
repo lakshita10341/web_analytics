@@ -18,8 +18,19 @@ from django.contrib import admin
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from analytics.views import register_user, create_site, track_event, page_views, sessions_metrics, new_vs_returning, sources, devices, browsers, geography, list_sites, tracker_js, kpis
-from rest_framework.decorators import api_view, permission_classes
-
+from django.urls import re_path
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from rest_framework import permissions
+schema_view = get_schema_view(
+    openapi.Info(
+        title="Analytics Dashboard API",
+        default_version="v1",
+        description="API documentation for the Web Analytics Dashboard",
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/signup/", register_user, name="signup"),
@@ -37,4 +48,8 @@ urlpatterns = [
     path("api/analytics/browsers/<str:site_id>/", browsers, name="browsers"),
     path("api/analytics/geography/<str:site_id>/", geography, name="geography"),
     path("api/analytics/kpis/<str:site_id>/", kpis, name="kpis"),
+    re_path(r"^swagger(?P<format>\.json|\.yaml)$", schema_view.without_ui(cache_timeout=0), name="schema-json"),
+    path("swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
+    path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
+
 ]

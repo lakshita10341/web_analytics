@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "analytics",
     "corsheaders",
+    "drf_yasg",
 ]
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (

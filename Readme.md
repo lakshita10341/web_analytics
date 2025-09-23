@@ -120,17 +120,74 @@ cd backend
 python manage.py migrate
 ```
 
+## API Documentation
+
+The backend provides a JWT-secured REST API for authentication, site management, and analytics.
+
+### Auth
+- `POST /api/signup/` – register a new user
+- `POST /api/login/` – obtain access + refresh tokens
+- `POST /api/token/refresh/` – refresh access token
+
+### Sites
+- `GET /api/sites/` – list user’s sites
+- `POST /api/create_site/` – create a new site
+- `GET /api/tracker/` – serve embeddable tracking snippet
+
+### Tracking
+- `POST /track/` – ingest a tracking event
+
+### Analytics (all endpoints take `site_id`)
+- `GET /api/analytics/pages/<site_id>/` – top pages, views trend  
+- `GET /api/analytics/sessions/<site_id>/` – session count + avg. duration  
+- `GET /api/analytics/new-vs-returning/<site_id>/` – breakdown of new vs returning users  
+- `GET /api/analytics/sources/<site_id>/` – traffic sources (referrers/UTMs)  
+- `GET /api/analytics/devices/<site_id>/` – device + OS distribution  
+- `GET /api/analytics/browsers/<site_id>/` – browser distribution  
+- `GET /api/analytics/geography/<site_id>/` – geo breakdown by country/region  
+- `GET /api/analytics/kpis/<site_id>/` – high-level KPIs (page views, active users, bounce rate, etc.)
+
+### Interactive Docs
+- Swagger UI → `/swagger/`  
+- ReDoc → `/redoc/`  
+CORS is enabled for local development hosts and Vercel preview URLs (see `backend/web_analytics_backend/settings.py`).
+
 ## API Overview
-Key elements (non‑exhaustive):
+Key elements (non-exhaustive):
 
 - **Auth (JWT)** via SimpleJWT
   - `POST /api/token/` – obtain access and refresh tokens
   - `POST /api/token/refresh/` – refresh access token
 - **Analytics**
   - `POST /api/create_site/` – create a new site record
-  - Additional endpoints are defined in `backend/analytics/views.py`
+  - `POST /api/events/` – ingest a tracking event
+  - `GET /api/overview/?days=30` – overall metrics (page views, sessions, users)
+  - `GET /api/pages/?days=30` – top pages
+  - `GET /api/sources/?days=30` – traffic sources
+  - `GET /api/devices/?days=30` – device + OS distribution
+  - `GET /api/browsers/?days=30` – browser family/version distribution
+  - `GET /api/geo/?days=30` – country/region distribution
 
-CORS is enabled for local development hosts and Vercel preview URLs (see `backend/web_analytics_backend/settings.py`).
+### Interactive API Docs
+- **Swagger UI** → [http://localhost:8000/swagger/](http://localhost:8000/swagger/)  
+- **ReDoc UI** → [http://localhost:8000/redoc/](http://localhost:8000/redoc/)  
+
+Both Swagger and ReDoc are generated automatically from DRF viewsets and serializers.
+
+---
+
+## Screenshots
+
+### 🔑 Authentication Flow
+![Login Screen](./screenshots/login.png)
+
+### 📊 Dashboard Overview
+![Dashboard](./screenshots/site.png)
+
+### 📈 Page Views 
+![Page Views Graph](./screenshots/pageview.png)
+
+---
 
 ## Development Workflow
 - **Frontend API client**: `web_analytics_frontend/src/lib/api.ts`
